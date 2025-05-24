@@ -160,7 +160,7 @@ npm install
 Create a `.env` file in the root directory:
 ```env
 # MongoDB Atlas Connection
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/ecommerce-admin?retryWrites=true&w=majority
+MONGODB_URIretryWrites=true&w=majority
 
 # Server Configuration
 PORT=3000
