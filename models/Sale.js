@@ -13,114 +13,51 @@ const saleSchema = new mongoose.Schema({
   },
   quantity: {
     type: Number,
-    required: true,
-    min: 1
+    required: true
   },
-  unitPrice: {
+  originalPrice: {
     type: Number,
-    required: true,
-    min: 0
-  },
-  totalAmount: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  discount: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  tax: {
-    type: Number,
-    default: 0,
-    min: 0
+    required: true
   },
   finalAmount: {
     type: Number,
-    required: true,
-    min: 0
+    required: true
   },
   marketplace: {
     type: String,
-    enum: ['amazon', 'walmart'],
     required: true
-  },
-  customer: {
-    customerId: String,
-    name: String,
-    email: String,
-    location: {
-      city: String,
-      state: String,
-      country: String,
-      zipCode: String
-    }
-  },
-  paymentMethod: {
-    type: String,
-    enum: ['credit_card', 'debit_card', 'paypal', 'bank_transfer', 'cash_on_delivery'],
-    required: true
-  },
-  paymentStatus: {
-    type: String,
-    enum: ['pending', 'completed', 'failed', 'refunded'],
-    default: 'pending'
-  },
-  orderStatus: {
-    type: String,
-    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'],
-    default: 'pending'
-  },
-  shippingInfo: {
-    carrier: String,
-    trackingNumber: String,
-    shippedDate: Date,
-    estimatedDelivery: Date,
-    actualDelivery: Date
   },
   saleDate: {
     type: Date,
-    default: Date.now,
-    required: true
+    default: Date.now
   },
-  refundInfo: {
-    isRefunded: {
-      type: Boolean,
-      default: false
-    },
-    refundAmount: Number,
-    refundDate: Date,
-    refundReason: String
-  },
-  notes: String
+  fees: {
+    marketplace: { type: Number, default: 0 },
+    payment: { type: Number, default: 0 },
+    shipping: { type: Number, default: 0 }
+  }
 }, {
   timestamps: true
 });
 
-// Virtual for profit calculation
-saleSchema.virtual('profit').get(function() {
-  // This would need the product's cost price - we'll populate it in queries
-  return this.finalAmount - (this.quantity * (this.populated('product')?.costPrice || 0));
+// TODO: cache this calculation for performance
+saleSchema.virtual('totalFees').get(function () {
+  return (this.fees?.marketplace || 0) + (this.fees?.payment || 0) + (this.fees?.shipping || 0);
 });
 
-// Indexes for optimal query performance
-// Note: orderId already has unique index from schema definition
-saleSchema.index({ product: 1 });
-saleSchema.index({ marketplace: 1 });
+saleSchema.virtual('netAmount').get(function () {
+  return this.finalAmount - this.totalFees;
+});
+
 saleSchema.index({ saleDate: -1 });
-saleSchema.index({ paymentStatus: 1 });
-saleSchema.index({ orderStatus: 1 });
-saleSchema.index({ 'customer.customerId': 1 });
-saleSchema.index({ finalAmount: 1 });
-saleSchema.index({ createdAt: -1 });
-
-// Compound indexes for analytics
+// Performance indexes for analytics queries
+saleSchema.index({ saleDate: 1 });
+saleSchema.index({ marketplace: 1 });
 saleSchema.index({ saleDate: 1, marketplace: 1 });
-saleSchema.index({ saleDate: 1, product: 1 });
-saleSchema.index({ marketplace: 1, orderStatus: 1 });
+saleSchema.index({ product: 1, saleDate: 1 });
+saleSchema.index({ marketplace: 1, saleDate: 1 });
+saleSchema.index({ finalAmount: 1 });
 
-// Ensure virtual fields are serialized
 saleSchema.set('toJSON', { virtuals: true });
 
 module.exports = mongoose.model('Sale', saleSchema);

@@ -6,53 +6,25 @@ const inventoryTransactionSchema = new mongoose.Schema({
     ref: 'Product',
     required: true
   },
-  inventory: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Inventory',
-    required: true
-  },
-  transactionType: {
-    type: String,
-    enum: ['inbound', 'outbound', 'adjustment', 'transfer', 'return'],
-    required: true
-  },
-  quantity: {
-    type: Number,
-    required: true
-  },
-  previousStock: {
-    type: Number,
-    required: true
-  },
-  newStock: {
-    type: Number,
-    required: true
-  },
-  reason: {
+  txn_type: {  
     type: String,
     required: true
   },
-  reference: {
-    type: String, // Could be order ID, transfer ID, etc.
-  },
-  performedBy: {
-    userId: String,
-    userName: String
-  },
-  notes: String,
-  cost: {
+  qty: {  
     type: Number,
-    min: 0
-  }
+    required: true
+  },
+  reason: String,
+  ref_id: String  
 }, {
   timestamps: true
 });
 
-// Indexes
+// Performance indexes for transaction history queries
 inventoryTransactionSchema.index({ product: 1 });
-inventoryTransactionSchema.index({ inventory: 1 });
-inventoryTransactionSchema.index({ transactionType: 1 });
+inventoryTransactionSchema.index({ type: 1 }); // Fixed field name from txn_type
 inventoryTransactionSchema.index({ createdAt: -1 });
-inventoryTransactionSchema.index({ reference: 1 });
+inventoryTransactionSchema.index({ product: 1, createdAt: -1 }); // Product history
+inventoryTransactionSchema.index({ type: 1, createdAt: -1 }); // Transaction type filtering
 
 module.exports = mongoose.model('InventoryTransaction', inventoryTransactionSchema);

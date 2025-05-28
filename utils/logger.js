@@ -1,4 +1,4 @@
-// Simple console logger - no fancy Winston stuff
+// Simple console logger - should add winston or similar for later
 const logger = {
   info: (message, data) => {
     console.log(`[INFO] ${message}`, data ? JSON.stringify(data) : '');

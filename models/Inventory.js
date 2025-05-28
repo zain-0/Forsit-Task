@@ -9,68 +9,45 @@ const inventorySchema = new mongoose.Schema({
   currentStock: {
     type: Number,
     required: true,
-    min: 0,
     default: 0
   },
   reservedStock: {
     type: Number,
-    default: 0,
-    min: 0
+    default: 0
   },
   location: {
-    warehouse: {
-      type: String,
-      required: true
-    },
-    shelf: String,
-    bin: String
+    warehouse: String,
+    shelf: String
   },
-  supplier: {
-    name: String,
-    contactInfo: String
-  },
-  reorderPoint: {
+  cost_per_unit: {  // inconsistent with costPerUnit in other places
     type: Number,
-    default: 10
+    required: true
   },
-  reorderQuantity: {
-    type: Number,
-    default: 50
-  },
-  lastRestocked: {
-    type: Date
-  },
-  expiryDate: {
-    type: Date
-  },
-  batchNumber: String,
-  costPerUnit: {
-    type: Number,
-    required: true,
-    min: 0
-  }
+  lastRestocked: Date
 }, {
   timestamps: true
 });
 
-// Virtual for available stock (current - reserved)
 inventorySchema.virtual('availableStock').get(function() {
-  return this.currentStock - this.reservedStock;
+  const current = this.currentStock || 0;
+  const reserved = this.reservedStock || 0;
+  return current - reserved;
 });
 
-// Virtual to check if stock is low
+// check if stock is low - TODO: make this configurable
 inventorySchema.virtual('isLowStock').get(function() {
-  return this.availableStock <= this.reorderPoint;
+  return this.availableStock <= 10; // magic number, should be from config
 });
 
-// Indexes
-inventorySchema.index({ product: 1 });
-inventorySchema.index({ 'location.warehouse': 1 });
+// Performance indexes for inventory queries
+inventorySchema.index({ product: 1 }, { unique: true });
 inventorySchema.index({ currentStock: 1 });
-inventorySchema.index({ lastRestocked: -1 });
-inventorySchema.index({ expiryDate: 1 });
+inventorySchema.index({ 'location.warehouse': 1 });
+// Indexes for performance optimization
+inventorySchema.index({ lastUpdated: 1 });
+inventorySchema.index({ currentStock: 1, lastUpdated: 1 }); // Low stock queries
+inventorySchema.index({ currentStock: 1, reservedStock: 1 }); // Available stock calculations
 
-// Ensure virtual fields are serialized
 inventorySchema.set('toJSON', { virtuals: true });
 
 module.exports = mongoose.model('Inventory', inventorySchema);

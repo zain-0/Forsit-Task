@@ -1,27 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
-const Package = require('../package.json');
+const healthController = require('../controllers/healthController');
 
 // Basic health check
-router.get('/', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    version: Package.version,
-    uptime: Math.floor(process.uptime())
-  });
-});
+router.get('/', healthController.getHealthCheck);
 
 // Database health check
-router.get('/db', (req, res) => {
-  const dbState = mongoose.connection.readyState;
-  const isConnected = dbState === 1;
-  
-  res.status(isConnected ? 200 : 503).json({
-    status: isConnected ? 'OK' : 'ERROR',
-    database: isConnected ? 'connected' : 'disconnected'
-  });
-});
+router.get('/db', healthController.getDbConnection);
 
 module.exports = router;

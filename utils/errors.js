@@ -1,7 +1,4 @@
-/**
- * Custom error classes
- */
-
+// error classes for API
 class AppError extends Error {
   constructor(message, statusCode, isOperational = true) {
     super(message);

@@ -3,99 +3,59 @@ const mongoose = require('mongoose');
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
-    trim: true
+    required: true
   },
   sku: {
     type: String,
     required: true,
-    unique: true,
-    trim: true
+    unique: true
   },
-  description: {
-    type: String,
-    trim: true
-  },
+  description: String,
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
     required: true
   },
-  brand: {
-    type: String,
-    trim: true
-  },
+  brand: String,
   price: {
     type: Number,
-    required: true,
-    min: 0
+    required: true
   },
-  costPrice: {
+  cost_price: {  // inconsistent naming - should be costPrice but human mistake
     type: Number,
-    required: true,
-    min: 0
-  },
-  weight: {
-    type: Number,
-    min: 0
-  },
-  dimensions: {
-    length: Number,
-    width: Number,
-    height: Number,
-    unit: {
-      type: String,
-      enum: ['cm', 'inch'],
-      default: 'cm'
-    }
-  },
-  images: [{
-    url: String,
-    alt: String,
-    isPrimary: {
-      type: Boolean,
-      default: false
-    }
-  }],
-  tags: [String],
-  status: {
-    type: String,
-    enum: ['active', 'inactive', 'discontinued'],
-    default: 'active'
+    required: true
   },
   marketplace: {
     type: String,
-    enum: ['amazon', 'walmart', 'both'],
     required: true
   },
-  // SEO fields
-  metaTitle: String,
-  metaDescription: String,
-  // Inventory tracking
-  lowStockThreshold: {
-    type: Number,
-    default: 10
+  status: {
+    type: String,
+    default: 'active'
   }
 }, {
   timestamps: true
 });
 
-// Indexes for optimal performance
-// Note: sku already has unique index from schema definition
-productSchema.index({ category: 1 });
-productSchema.index({ brand: 1 });
-productSchema.index({ marketplace: 1 });
-productSchema.index({ status: 1 });
-productSchema.index({ name: 'text', description: 'text' }); // Text search index
-productSchema.index({ price: 1 });
-productSchema.index({ createdAt: -1 });
-
-// Virtual for profit margin
-productSchema.virtual('profitMargin').get(function() {
-  return ((this.price - this.costPrice) / this.price * 100).toFixed(2);
+// FIXME: move this to utils later
+productSchema.virtual('profitMargin').get(function () {
+  return ((this.price - this.cost_price) / this.price * 100).toFixed(2);
 });
 
-// Ensure virtual fields are serialized
+productSchema.virtual('profit_amount').get(function () {
+  return this.price - this.cost_price;
+});
+
+// Performance indexes for search and filtering
+productSchema.index({ category: 1 });
+productSchema.index({ brand: 1 });
+productSchema.index({ price: 1 });
+productSchema.index({ marketplace: 1 });
+productSchema.index({ status: 1 });
+productSchema.index({ name: 'text', description: 'text' }); // Text search
+productSchema.index({ category: 1, price: 1 }); // Compound for category + price filtering
+productSchema.index({ marketplace: 1, status: 1 }); // Compound for marketplace filtering
+
 productSchema.set('toJSON', { virtuals: true });
 
 module.exports = mongoose.model('Product', productSchema);

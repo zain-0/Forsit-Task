@@ -1,9 +1,9 @@
+// monkey patching request to log request
 const requestLogger = (req, res, next) => {
   const start = Date.now();
   req.requestId = Math.random().toString(36).substr(2, 9);
   
   console.log(`${req.method} ${req.originalUrl}`);
-
   const originalJson = res.json;
   res.json = function(obj) {
     const duration = Date.now() - start;
